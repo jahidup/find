@@ -2,133 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, maximum-scale=1.0">
   <title>NULL PROTOCOL | Premium Intelligence</title>
+  <!-- Fonts & Icons (using system & emoji fallback) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
   <style>
     * {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
-      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
     }
 
     body {
-      background: #0b0f1a;
-      color: #eef2ff;
-      display: flex;
-      height: 100vh;
-      overflow: hidden;
+      background: radial-gradient(circle at 10% 20%, rgba(5, 8, 20, 1) 0%, #0a0f1f 100%);
+      font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+      color: #f0f3fa;
+      min-height: 100vh;
+      padding: 1.5rem;
+      position: relative;
+      overflow-x: hidden;
     }
 
-    /* ===== LOGIN SCREEN ===== */
-    #loginScreen {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 100%;
-      height: 100vh;
-      background: radial-gradient(circle at 20% 30%, #0f172a, #020617);
+    /* zoom adjustment — kept from original but refined */
+    body {
+      zoom: 0.85;
+      -moz-transform: scale(0.85);
+      -moz-transform-origin: top left;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      transition: margin-left 0.25s ease;
+    }
+
+    /* ----- SIDEBAR (hidden by default, toggled via hamburger) ----- */
+    .sidebar {
       position: fixed;
       top: 0;
       left: 0;
-      z-index: 1000;
-    }
-
-    .login-card {
-      background: rgba(15, 25, 45, 0.8);
-      backdrop-filter: blur(12px);
-      padding: 2.5rem;
-      border-radius: 2rem;
-      border: 1px solid rgba(0, 225, 255, 0.25);
-      width: 100%;
-      max-width: 420px;
-      box-shadow: 0 25px 40px -10px #000000cc;
-    }
-
-    .login-card h1 {
-      font-size: 2.2rem;
-      font-weight: 800;
-      background: linear-gradient(135deg, #00e1ff, #a855f7);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-
-    .login-card input {
-      width: 100%;
-      padding: 0.9rem 1.2rem;
-      margin: 0.7rem 0;
-      background: #010314;
-      border: 1px solid #2d3a5e;
-      border-radius: 1.5rem;
-      color: white;
-      font-size: 1rem;
-      transition: 0.2s;
-    }
-
-    .login-card input:focus {
-      outline: none;
-      border-color: #00e1ff;
-      box-shadow: 0 0 8px #00e1ff40;
-    }
-
-    .login-card button {
-      width: 100%;
-      padding: 0.9rem;
-      background: linear-gradient(95deg, #00e1ff, #00c3a0);
-      border: none;
-      border-radius: 2rem;
-      font-weight: bold;
-      color: #020617;
-      font-size: 1rem;
-      cursor: pointer;
-      margin-top: 1rem;
-      transition: 0.2s;
-    }
-
-    .login-card button:hover {
-      transform: scale(1.01);
-      filter: brightness(1.05);
-    }
-
-    .error {
-      color: #fb7185;
-      text-align: center;
-      margin-top: 1rem;
-      font-size: 0.9rem;
-    }
-
-    .admin-link {
-      text-align: center;
-      margin-top: 1.5rem;
-    }
-
-    .admin-link a {
-      color: #00e1ff;
-      text-decoration: none;
-      font-weight: 500;
-    }
-
-    /* ===== DASHBOARD LAYOUT ===== */
-    #dashboard {
-      display: none;
-      width: 100%;
+      width: 260px;
       height: 100vh;
+      background: rgba(8, 15, 30, 0.95);
+      backdrop-filter: blur(20px);
+      border-right: 1px solid #00e1ff40;
+      padding: 1.8rem 1.2rem;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.4, 1);
+      z-index: 1000;
+      box-shadow: 8px 0 30px rgba(0,0,0,0.5);
     }
-
-    .sidebar {
-      width: 280px;
-      background: #0f172a;
-      border-right: 1px solid #1e293b;
-      display: flex;
-      flex-direction: column;
-      padding: 1.5rem 1rem;
-      overflow-y: auto;
+    .sidebar.open {
+      transform: translateX(0);
     }
-
-    .sidebar .logo {
+    .sidebar .logo-side {
       font-size: 1.8rem;
       font-weight: 800;
       background: linear-gradient(135deg, #00e1ff, #00ffc6);
@@ -136,551 +63,637 @@
       background-clip: text;
       color: transparent;
       margin-bottom: 2rem;
+      display: block;
     }
-
-    .user-info {
-      background: #1e293b;
-      border-radius: 1.5rem;
-      padding: 1rem;
-      margin-bottom: 2rem;
-      border-left: 4px solid #00e1ff;
-    }
-
-    .user-info p {
-      margin: 0.3rem 0;
+    .sidebar nav a {
       display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0.9rem 1rem;
+      color: #ccd6f0;
+      text-decoration: none;
+      border-radius: 14px;
+      margin-bottom: 6px;
+      font-weight: 500;
+      transition: all 0.15s;
+    }
+    .sidebar nav a i {
+      width: 24px;
+      color: #00e1ff;
+    }
+    .sidebar nav a:hover {
+      background: #1e2a4a;
+      color: white;
+    }
+
+    /* overlay when sidebar open (mobile) */
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: #00000080;
+      backdrop-filter: blur(3px);
+      z-index: 999;
+      opacity: 0;
+      visibility: hidden;
+      transition: 0.2s;
+    }
+    .sidebar-overlay.show {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* hamburger button */
+    .menu-toggle {
+      background: transparent;
+      border: 1px solid #2d3a5e;
+      color: #00e1ff;
+      font-size: 1.6rem;
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-right: 10px;
+    }
+    .menu-toggle:hover {
+      background: #1e2a4a;
+      border-color: #00e1ff;
+    }
+
+    /* ----- FLOATING MESSAGE ICON (side) ----- */
+    .msg-float-btn {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(145deg, #00e1ff, #00ffc6);
+      border-radius: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 10px 25px #00e1ff40, 0 4px 8px #00000050;
+      cursor: pointer;
+      z-index: 900;
+      border: none;
+      transition: 0.2s;
+      color: #020617;
+      font-size: 28px;
+    }
+    .msg-float-btn:hover {
+      transform: scale(1.08);
+      box-shadow: 0 15px 30px #00ffc6;
+    }
+
+    /* message panel (hidden by default) */
+    .msg-panel {
+      position: fixed;
+      bottom: 100px;
+      right: 28px;
+      width: 300px;
+      background: rgba(10, 20, 40, 0.95);
+      backdrop-filter: blur(20px);
+      border: 1px solid #00e1ff;
+      border-radius: 24px;
+      padding: 1.2rem;
+      box-shadow: 0 20px 40px #00000080;
+      z-index: 950;
+      opacity: 0;
+      visibility: hidden;
+      transform: translateY(15px);
+      transition: 0.25s;
+    }
+    .msg-panel.show {
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(0);
+    }
+    .msg-panel h4 {
+      color: #00ffc6;
+      margin-bottom: 12px;
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .msg-panel textarea {
+      width: 100%;
+      background: #020b1a;
+      border: 1px solid #2d3a5e;
+      border-radius: 16px;
+      padding: 12px;
+      color: white;
+      resize: vertical;
+      margin-bottom: 12px;
+    }
+    .msg-panel .wa-link {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 40px;
+      font-weight: bold;
+      display: inline-flex;
       align-items: center;
       gap: 8px;
-    }
-
-    .nav-item {
-      padding: 0.8rem 1rem;
-      margin: 0.3rem 0;
-      border-radius: 1rem;
-      cursor: pointer;
+      text-decoration: none;
       transition: 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      color: #cbd5e1;
     }
 
-    .nav-item:hover {
-      background: #00e1ff20;
-      border-left: 3px solid #00e1ff;
-      color: white;
-    }
-
-    .nav-item.active {
-      background: #00e1ff20;
-      border-left: 3px solid #00e1ff;
-      color: white;
-    }
-
-    .main-content {
-      flex: 1;
-      padding: 2rem;
-      overflow-y: auto;
-      background: #0b0f1a;
-    }
-
-    .page {
-      animation: fadeSlide 0.3s ease;
-    }
-
-    @keyframes fadeSlide {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
+    /* card */
     .card {
-      background: #0f172a;
-      border-radius: 1.5rem;
-      padding: 1.8rem;
-      border: 1px solid #1e293b;
-      margin-bottom: 2rem;
-      box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+      background: rgba(15, 25, 45, 0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      border: 1px solid rgba(0, 225, 255, 0.3);
+      padding: 2rem;
+      box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.5);
     }
 
-    h2 {
-      font-size: 1.5rem;
-      margin-bottom: 1.5rem;
-      background: linear-gradient(135deg, #00e1ff, #a855f7);
+    .logo {
+      font-size: 2rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00e1ff, #00ffc6);
       -webkit-background-clip: text;
       background-clip: text;
       color: transparent;
+      letter-spacing: -0.5px;
     }
-
-    h3 {
-      font-size: 1.2rem;
-      margin-bottom: 1rem;
-    }
-
-    .btn {
-      background: #1e293b;
-      padding: 0.7rem 1.5rem;
-      border-radius: 2rem;
-      border: none;
-      color: white;
+    .badge {
+      background: rgba(34, 197, 94, 0.2);
+      padding: 0.5rem 1rem;
+      border-radius: 40px;
       font-weight: 500;
-      cursor: pointer;
-      transition: 0.2s;
-      display: inline-block;
-      margin-right: 0.5rem;
+      border-left: 3px solid #22c55e;
     }
 
-    .btn-primary {
-      background: linear-gradient(95deg, #00e1ff, #00c3a0);
+    input, select, button {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      margin: 0.6rem 0;
+      background: rgba(2, 6, 23, 0.8);
+      border: 1px solid #2d3a5e;
+      border-radius: 1.5rem;
+      color: white;
+      font-size: 1rem;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: #00e1ff;
+      box-shadow: 0 0 8px rgba(0,225,255,0.3);
+    }
+    button {
+      background: linear-gradient(95deg, #00e1ff, #00ffc6);
       color: #020617;
       font-weight: bold;
       border: none;
-    }
-
-    .btn-primary:hover {
-      filter: brightness(1.05);
-      transform: scale(1.01);
-    }
-
-    input, select, textarea {
-      background: #010314;
-      border: 1px solid #2d3a5e;
-      border-radius: 1.5rem;
-      padding: 0.8rem 1.2rem;
-      color: white;
-      width: 100%;
-      margin: 0.5rem 0;
-      font-size: 0.95rem;
-      transition: 0.2s;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #00e1ff;
-      box-shadow: 0 0 6px #00e1ff80;
-    }
-
-    .plan-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1.2rem;
-      margin-top: 1.5rem;
-    }
-
-    .plan-card {
-      background: #1e293b;
-      border-radius: 1.5rem;
-      padding: 1.5rem;
-      text-align: center;
-      border: 1px solid #334155;
       cursor: pointer;
-      transition: 0.2s;
-    }
-
-    .plan-card:hover {
-      border-color: #00e1ff;
-      transform: translateY(-3px);
-    }
-
-    .price {
-      font-size: 2rem;
-      font-weight: bold;
-      color: #00e1ff;
-      margin-bottom: 0.5rem;
-    }
-
-    .credits-amount {
-      font-size: 1.2rem;
-      margin-bottom: 0.5rem;
-    }
-
-    .announcement-item {
-      background: #1e293b;
-      border-radius: 1rem;
-      padding: 1.2rem;
-      margin-bottom: 1rem;
-      border-left: 4px solid #00e1ff;
-    }
-
-    .announcement-item strong {
-      color: #00e1ff;
-    }
-
-    .announcement-item small {
-      color: #94a3b8;
-      display: block;
-      margin: 0.3rem 0 0.5rem;
     }
 
     .result-box {
       background: #010314;
-      border-radius: 1rem;
+      border-radius: 1.5rem;
       padding: 1.2rem;
       font-family: 'JetBrains Mono', monospace;
-      white-space: pre-wrap;
-      max-height: 400px;
-      overflow: auto;
-      border: 1px solid #2d3a5e;
-      margin-top: 1.5rem;
       font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      border: 1px solid #2d3a5e;
+      max-height: 500px;
     }
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .sidebar { width: 90px; }
-      .sidebar .logo { font-size: 1.2rem; }
-      .sidebar .user-info p span:not(.icon) { display: none; }
-      .nav-item span:not(.icon) { display: none; }
-      .main-content { padding: 1rem; }
+    .flex-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    /* MODAL (credit packages) */
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: #000000b3;
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      opacity: 0;
+      visibility: hidden;
+      transition: 0.2s;
+    }
+    .modal.show {
+      opacity: 1;
+      visibility: visible;
+    }
+    .modal-card {
+      background: #0b1428;
+      border: 1px solid #00e1ff;
+      border-radius: 2rem;
+      padding: 2rem;
+      max-width: 450px;
+      width: 90%;
+      box-shadow: 0 30px 50px #000;
+    }
+    .package-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 20px 0;
+    }
+    .pkg-item {
+      background: #111c33;
+      border-radius: 18px;
+      padding: 15px 8px;
+      text-align: center;
+      border: 1px solid #2d3a5e;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+    .pkg-item.selected {
+      border: 2px solid #00ffc6;
+      background: #1a2c4e;
+    }
+    .pkg-price {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #00ffc6;
+    }
+
+    .wa-btn {
+      background: #25D366;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 40px;
+      font-weight: bold;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    /* responsive */
+    @media (max-width: 680px) {
+      body { padding: 0.8rem; zoom: 0.7; }
+      .card { padding: 1.2rem; }
+    }
+
+    /* credit button inside login & dashboard */
+    .credit-btn {
+      background: transparent;
+      border: 1.5px solid #00ffc6;
+      color: #00ffc6;
+      padding: 0.6rem 1.2rem;
+      border-radius: 40px;
+      font-weight: 600;
+      width: auto;
+      margin-left: 8px;
     }
   </style>
-  <!-- Font Awesome for icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
-  <!-- LOGIN SCREEN -->
-  <div id="loginScreen">
-    <div class="login-card">
-      <h1><i class="fas fa-bolt"></i> NULL PROTOCOL</h1>
-      <input type="text" id="loginUsername" placeholder="Username" autocomplete="off">
-      <input type="password" id="loginPassword" placeholder="Password">
-      <button id="loginBtn"><i class="fas fa-sign-in-alt"></i> Access Intelligence →</button>
-      <div id="loginError" class="error"></div>
-      <div class="admin-link">
-        <a href="/admin.html"><i class="fas fa-shield-alt"></i> Admin Portal (4‑field)</a>
+
+<!-- SIDEBAR (functional, toggles with hamburger) -->
+<div class="sidebar" id="sidebar">
+  <div class="logo-side">⚡ NULL</div>
+  <nav>
+    <a href="#"><i class="fas fa-home"></i> Dashboard</a>
+    <a href="#"><i class="fas fa-search"></i> Deep Search</a>
+    <a href="#"><i class="fas fa-history"></i> History</a>
+    <a href="#"><i class="fas fa-cog"></i> Settings</a>
+    <a href="#" id="sidebarCreditsBtn"><i class="fas fa-coins"></i> Buy Credits</a>
+  </nav>
+  <div style="margin-top: 30px; font-size: 0.8rem; opacity:0.7; padding:12px;">
+    <i class="fab fa-whatsapp"></i> Support: +91 8055698328
+  </div>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- FLOATING MESSAGE ICON (side) -->
+<div class="msg-float-btn" id="msgFloatBtn">
+  <i class="fas fa-comment-dots"></i>
+</div>
+<!-- Message panel (shows on click) -->
+<div class="msg-panel" id="msgPanel">
+  <h4><i class="fas fa-headset"></i> Message support</h4>
+  <textarea placeholder="Type your query... (we'll reply on WhatsApp)" rows="3" id="msgText"></textarea>
+  <div style="display: flex; gap: 10px;">
+    <a href="#" class="wa-link" id="sendMsgWaBtn" target="_blank">
+      <i class="fab fa-whatsapp"></i> Send via WhatsApp
+    </a>
+    <button style="width: auto; padding:0.6rem 1.2rem;" id="closeMsgPanel">Close</button>
+  </div>
+  <p style="font-size:0.7rem; margin-top:10px; opacity:0.7;">Or call +91 8055698328</p>
+</div>
+
+<!-- CREDITS MODAL (packages) -->
+<div class="modal" id="creditModal">
+  <div class="modal-card">
+    <h2 style="display: flex; gap:10px;"><i class="fas fa-bolt"></i> Get More Credits</h2>
+    <p style="margin-bottom: 10px;">Select a package & pay via WhatsApp</p>
+    <div class="package-grid">
+      <div class="pkg-item" data-credits="15" data-price="9">
+        <div>🔥 15 Credits</div>
+        <div class="pkg-price">₹9</div>
       </div>
+      <div class="pkg-item" data-credits="100" data-price="49">
+        <div>⚡ 100 Credits</div>
+        <div class="pkg-price">₹49</div>
+      </div>
+      <div class="pkg-item" data-credits="300" data-price="99">
+        <div>💎 300 Credits</div>
+        <div class="pkg-price">₹99</div>
+      </div>
+      <div class="pkg-item" data-credits="unlimited" data-price="199">
+        <div>🚀 Monthly Unlimited</div>
+        <div class="pkg-price">₹199</div>
+        <small>30 days</small>
+      </div>
+    </div>
+    <p id="selectedPkgDisplay" style="margin:10px 0;">Selected: 15 credits for ₹9</p>
+    <a href="#" id="whatsappBuyBtn" class="wa-btn" target="_blank">
+      <i class="fab fa-whatsapp"></i> Buy via WhatsApp (+91 8055698328)
+    </a>
+    <button style="margin-top: 12px; background: #2d3a5e; color:white;" id="closeModalBtn">Cancel</button>
+  </div>
+</div>
+
+<div class="container">
+  <!-- LOGIN CARD -->
+  <div id="loginCard" class="card" style="max-width: 500px; margin: 10vh auto;">
+    <div class="logo" style="text-align: center; margin-bottom: 1rem;">⚡ NULL PROTOCOL</div>
+    <h2 style="text-align: center; margin-bottom: 1.5rem;">Sign in</h2>
+    <input type="text" id="loginUsername" placeholder="Username">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button id="doLoginBtn">Access Intelligence →</button>
+    <!-- Get More Credits button BEFORE login -->
+    <button class="credit-btn" id="loginCreditBtn" style="margin-top: 10px;"><i class="fas fa-coins"></i> Get More Credits</button>
+    <div id="loginError" style="color: #fb7185; margin-top: 1rem; text-align: center;"></div>
+    <div style="text-align: center; margin-top: 1.5rem;">
+      <a href="/admin.html" style="color: #00e1ff; text-decoration: none;">🔐 Admin (4‑field)</a>
     </div>
   </div>
 
-  <!-- DASHBOARD -->
-  <div id="dashboard">
-    <!-- Sidebar -->
-    <div class="sidebar">
-      <div class="logo"><i class="fas fa-bolt"></i> NULL</div>
-      <div class="user-info">
-        <p><i class="fas fa-user"></i> <span id="sidebarUsername">—</span></p>
-        <p><i class="fas fa-coins"></i> <span id="sidebarCredits">0</span> credits</p>
+  <!-- DASHBOARD CARD (hidden initially) -->
+  <div id="dashboard" style="display: none;">
+    <div class="flex-between" style="margin-bottom: 1.5rem;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <div class="menu-toggle" id="menuToggle"><i class="fas fa-bars"></i></div>
+        <div class="logo">⚡ NULL PROTOCOL</div>
       </div>
-      <div class="nav-item active" data-page="search">
-        <i class="fas fa-search"></i> <span>Search</span>
-      </div>
-      <div class="nav-item" data-page="buy">
-        <i class="fas fa-shopping-cart"></i> <span>Buy Credits</span>
-      </div>
-      <div class="nav-item" data-page="announcements">
-        <i class="fas fa-bullhorn"></i> <span>Announcements</span>
-      </div>
-      <div class="nav-item" id="logoutBtn" style="margin-top: auto;">
-        <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="badge">💰 <span id="creditsDisplay">0</span> credits</div>
+        <button class="credit-btn" id="dashboardCreditBtn"><i class="fas fa-plus-circle"></i> Get Credits</button>
+        <button id="logoutBtn" style="width: auto; padding: 0.5rem 1.2rem;">Logout</button>
       </div>
     </div>
-
-    <!-- Main Content -->
-    <div class="main-content">
-      <!-- SEARCH PAGE -->
-      <div id="page-search" class="page">
-        <div class="card">
-          <h2><i class="fas fa-search"></i> Deep Intelligence Search</h2>
-          <select id="apiSelect">
-            <option>Loading APIs...</option>
-          </select>
-          <input type="text" id="searchQuery" placeholder="Enter phone, Aadhaar, vehicle, etc...">
-          <button id="searchBtn" class="btn btn-primary"><i class="fas fa-play"></i> Execute (1 credit)</button>
-          <div id="searchResult" class="result-box">
-            <i class="fas fa-info-circle"></i> Ready for search
-          </div>
-        </div>
-      </div>
-
-      <!-- BUY CREDITS PAGE -->
-      <div id="page-buy" class="page" style="display: none;">
-        <div class="card">
-          <h2><i class="fab fa-whatsapp"></i> Purchase Credits via WhatsApp</h2>
-          <p>Select a plan – you'll be redirected to WhatsApp with a pre‑filled message containing your username and selected plan.</p>
-          <div class="plan-grid" id="planContainer"></div>
-        </div>
-      </div>
-
-      <!-- ANNOUNCEMENTS PAGE -->
-      <div id="page-announcements" class="page" style="display: none;">
-        <div class="card">
-          <h2><i class="fas fa-bullhorn"></i> Announcements from Admin</h2>
-          <div id="announcementsList">
-            <p>Loading announcements...</p>
-          </div>
-        </div>
-      </div>
+    <div class="card">
+      <h2>🔍 Deep Search</h2>
+      <select id="apiSelect">
+        <option>Loading APIs...</option>
+      </select>
+      <input type="text" id="searchQuery" placeholder="Enter phone, Aadhaar, vehicle, etc...">
+      <button id="searchNowBtn">🔎 Execute (1 credit)</button>
+      <div id="searchResult" class="result-box" style="margin-top: 1.5rem;">✨ Ready for search</div>
     </div>
   </div>
+</div>
 
-  <script>
-    (function() {
-      // ========== CONFIGURATION ==========
-      const WHATSAPP_NUMBER = '918055698328'; // without + sign
-      const CREDIT_PLANS = [
-        { credits: 500, price: 99 },
-        { credits: 1200, price: 199 },
-        { credits: 3500, price: 499 },
-        { credits: 8000, price: 999 }
-      ];
+<script>
+  (function(){
+    "use strict";
 
-      // ========== GLOBAL STATE ==========
-      let authToken = localStorage.getItem('userToken');
-      let currentUser = null;
+    // ----- existing auth & state -----
+    let authToken = localStorage.getItem('userToken');
+    const loginDiv = document.getElementById('loginCard');
+    const dashboard = document.getElementById('dashboard');
+    const creditsSpan = document.getElementById('creditsDisplay');
 
-      // DOM elements
-      const loginScreen = document.getElementById('loginScreen');
-      const dashboard = document.getElementById('dashboard');
-      const sidebarUsername = document.getElementById('sidebarUsername');
-      const sidebarCredits = document.getElementById('sidebarCredits');
-      const apiSelect = document.getElementById('apiSelect');
-      const searchQueryInput = document.getElementById('searchQuery');
-      const searchBtn = document.getElementById('searchBtn');
-      const searchResultDiv = document.getElementById('searchResult');
-      const planContainer = document.getElementById('planContainer');
-      const announcementsList = document.getElementById('announcementsList');
-      const loginError = document.getElementById('loginError');
+    // ----- SIDEBAR LOGIC (fix: open/close) -----
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const menuToggle = document.getElementById('menuToggle');
+    function openSidebar() {
+      sidebar.classList.add('open');
+      overlay.classList.add('show');
+    }
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('show');
+    }
+    if(menuToggle) {
+      menuToggle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openSidebar();
+      });
+    }
+    overlay.addEventListener('click', closeSidebar);
+    // Also close if click on sidebar link (optional)
+    document.querySelectorAll('.sidebar nav a').forEach(link => {
+      link.addEventListener('click', (e) => {
+        if(link.id === 'sidebarCreditsBtn') {
+          e.preventDefault();
+          showCreditModal();
+        }
+        closeSidebar();
+      });
+    });
 
-      // ========== HELPER FUNCTIONS ==========
-      async function apiCall(endpoint, options = {}) {
-        const res = await fetch(endpoint, {
-          ...options,
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${authToken}`,
-            ...options.headers
-          }
+    // ----- MESSAGE FLOAT & PANEL -----
+    const msgFloat = document.getElementById('msgFloatBtn');
+    const msgPanel = document.getElementById('msgPanel');
+    const closeMsgPanel = document.getElementById('closeMsgPanel');
+    const msgText = document.getElementById('msgText');
+    const sendMsgWaBtn = document.getElementById('sendMsgWaBtn');
+    const waNumber = '918055698328'; // without +
+
+    msgFloat.addEventListener('click', () => {
+      msgPanel.classList.toggle('show');
+    });
+    closeMsgPanel.addEventListener('click', () => {
+      msgPanel.classList.remove('show');
+    });
+    // prefill whatsapp message
+    function updateWaLink() {
+      let message = msgText.value.trim() || "Hello NULL PROTOCOL, I need assistance.";
+      let url = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+      sendMsgWaBtn.href = url;
+    }
+    msgText.addEventListener('input', updateWaLink);
+    updateWaLink(); // initial
+
+    // ----- CREDIT MODAL (packages) -----
+    const modal = document.getElementById('creditModal');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const loginCreditBtn = document.getElementById('loginCreditBtn');
+    const dashboardCreditBtn = document.getElementById('dashboardCreditBtn');
+    const whatsappBuyBtn = document.getElementById('whatsappBuyBtn');
+    const pkgItems = document.querySelectorAll('.pkg-item');
+    const selectedPkgDisplay = document.getElementById('selectedPkgDisplay');
+
+    let selectedPkg = { credits: '15', price: '9' }; // default
+
+    function showCreditModal() {
+      modal.classList.add('show');
+    }
+    function hideCreditModal() {
+      modal.classList.remove('show');
+    }
+
+    loginCreditBtn.addEventListener('click', showCreditModal);
+    if(dashboardCreditBtn) dashboardCreditBtn.addEventListener('click', showCreditModal);
+    closeModalBtn.addEventListener('click', hideCreditModal);
+    modal.addEventListener('click', (e) => { if(e.target === modal) hideCreditModal(); });
+
+    // package selection
+    pkgItems.forEach(item => {
+      item.addEventListener('click', () => {
+        pkgItems.forEach(i => i.classList.remove('selected'));
+        item.classList.add('selected');
+        const credits = item.dataset.credits;
+        const price = item.dataset.price;
+        selectedPkg = { credits, price };
+        let displayText = '';
+        if(credits === 'unlimited') displayText = `Unlimited monthly for ₹${price}`;
+        else displayText = `${credits} credits for ₹${price}`;
+        selectedPkgDisplay.innerText = `Selected: ${displayText}`;
+        updateWhatsAppBuyLink();
+      });
+    });
+    // set default selected
+    document.querySelector('.pkg-item[data-credits="15"]').classList.add('selected');
+
+    function updateWhatsAppBuyLink() {
+      const { credits, price } = selectedPkg;
+      let pkgDesc = (credits === 'unlimited') ? `Unlimited Monthly (₹${price})` : `${credits} Credits (₹${price})`;
+      const message = `Hi NULL PROTOCOL, I want to purchase ${pkgDesc}. My username: (please mention)`;
+      const url = `https://wa.me/${waNumber}?text=${encodeURIComponent(message)}`;
+      whatsappBuyBtn.href = url;
+    }
+    updateWhatsAppBuyLink();
+
+    // Also sidebar credits button triggers modal
+    document.getElementById('sidebarCreditsBtn').addEventListener('click', (e) => {
+      e.preventDefault();
+      showCreditModal();
+    });
+
+    // ----- EXISTING API FUNCTIONS (unchanged core) -----
+    async function loadApiTypes() {
+      try {
+        const res = await fetch('/api/api-types', { headers: { 'Authorization': `Bearer ${authToken}` } });
+        const data = await res.json();
+        const select = document.getElementById('apiSelect');
+        select.innerHTML = '';
+        if (data.length === 0) {
+          select.innerHTML = '<option>No APIs available</option>';
+        } else {
+          data.forEach(api => {
+            const opt = document.createElement('option');
+            opt.value = api.type;
+            opt.textContent = api.type.toUpperCase() + ' — ' + (api.description || '');
+            select.appendChild(opt);
+          });
+        }
+      } catch(e) { console.error(e); }
+    }
+
+    async function updateCredits() {
+      const res = await fetch('/api/me', { headers: { 'Authorization': `Bearer ${authToken}` } });
+      const data = await res.json();
+      if (data.credits !== undefined) creditsSpan.innerText = data.credits;
+      else if (data.error === 'Invalid token') logout();
+    }
+
+    function logout() {
+      localStorage.removeItem('userToken');
+      window.location.reload();
+    }
+
+    // login
+    document.getElementById('doLoginBtn').onclick = async () => {
+      const username = document.getElementById('loginUsername').value.trim();
+      const password = document.getElementById('loginPassword').value;
+      if (!username || !password) return document.getElementById('loginError').innerText = 'Both fields required';
+      const res = await fetch('/api/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        authToken = data.token;
+        localStorage.setItem('userToken', authToken);
+        loginDiv.style.display = 'none';
+        dashboard.style.display = 'block';
+        await loadApiTypes();
+        await updateCredits();
+      } else {
+        document.getElementById('loginError').innerText = data.error;
+      }
+    };
+
+    document.getElementById('searchNowBtn').onclick = async () => {
+      const apiType = document.getElementById('apiSelect').value;
+      const query = document.getElementById('searchQuery').value.trim();
+      if (!query) return alert('Enter search value');
+      const resultDiv = document.getElementById('searchResult');
+      resultDiv.innerHTML = '⏳ Processing request... (1 credit)';
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
+          body: JSON.stringify({ apiType, query })
         });
-        if (res.status === 401) {
-          logout();
-          throw new Error('Unauthorized');
+        const data = await res.json();
+        if (res.ok) {
+          creditsSpan.innerText = data.credits_left;
+          resultDiv.innerHTML = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+        } else {
+          resultDiv.innerHTML = `❌ ${data.error}`;
+          if (data.error === 'Insufficient credits') setTimeout(() => logout(), 1500);
         }
-        return res.json();
+      } catch (err) {
+        resultDiv.innerHTML = `⚠️ Network error: ${err.message}`;
       }
+    };
 
-      function logout() {
-        localStorage.removeItem('userToken');
-        authToken = null;
-        currentUser = null;
-        loginScreen.style.display = 'flex';
-        dashboard.style.display = 'none';
-        // Clear input fields
-        document.getElementById('loginUsername').value = '';
-        document.getElementById('loginPassword').value = '';
-      }
+    document.getElementById('logoutBtn').onclick = logout;
 
-      function showDashboard(userData) {
-        currentUser = userData;
-        sidebarUsername.textContent = userData.username;
-        sidebarCredits.textContent = userData.credits;
-        loginScreen.style.display = 'none';
-        dashboard.style.display = 'flex';
-        
-        // Load initial data
-        loadApiTypes();
-        renderCreditPlans();
-        loadAnnouncements();
-      }
-
-      // ========== API LOADING ==========
-      async function loadApiTypes() {
-        try {
-          const apis = await apiCall('/api/api-types');
-          apiSelect.innerHTML = '';
-          if (apis.length === 0) {
-            apiSelect.innerHTML = '<option>No APIs available</option>';
-          } else {
-            apis.forEach(api => {
-              const opt = document.createElement('option');
-              opt.value = api.type;
-              opt.textContent = `${api.type.toUpperCase()} — ${api.description || ''}`;
-              apiSelect.appendChild(opt);
-            });
-          }
-        } catch (err) {
-          console.error('Failed to load APIs:', err);
-        }
-      }
-
-      async function loadAnnouncements() {
-        try {
-          const announcements = await apiCall('/api/announcements');
-          if (announcements.length === 0) {
-            announcementsList.innerHTML = '<p><i class="fas fa-info-circle"></i> No announcements yet.</p>';
-            return;
-          }
-          announcementsList.innerHTML = announcements.map(ann => `
-            <div class="announcement-item">
-              <strong><i class="fas fa-bullhorn"></i> ${ann.title}</strong>
-              <small>${new Date(ann.createdAt).toLocaleString()}</small>
-              <p>${ann.message}</p>
-            </div>
-          `).join('');
-        } catch (err) {
-          announcementsList.innerHTML = '<p class="error">Failed to load announcements.</p>';
-        }
-      }
-
-      // ========== RENDER PLANS ==========
-      function renderCreditPlans() {
-        planContainer.innerHTML = CREDIT_PLANS.map(plan => `
-          <div class="plan-card" data-credits="${plan.credits}" data-price="${plan.price}">
-            <div class="price">₹${plan.price}</div>
-            <div class="credits-amount">${plan.credits} Credits</div>
-            <div style="font-size:0.9rem; opacity:0.8;">Click to purchase</div>
-          </div>
-        `).join('');
-
-        // Add click handlers
-        document.querySelectorAll('.plan-card').forEach(card => {
-          card.addEventListener('click', () => {
-            const credits = card.dataset.credits;
-            const price = card.dataset.price;
-            const message = `Hi, I want to purchase ${credits} credits for ₹${price}. My username: ${currentUser.username}`;
-            const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
-            window.open(url, '_blank');
-          });
-        });
-      }
-
-      // ========== SEARCH ==========
-      async function performSearch() {
-        const apiType = apiSelect.value;
-        const query = searchQueryInput.value.trim();
-        if (!query) {
-          searchResultDiv.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Please enter a search query.';
-          return;
-        }
-
-        searchResultDiv.innerHTML = '<i class="fas fa-spinner fa-pulse"></i> Processing request... (1 credit will be deducted)';
-
-        try {
-          const data = await apiCall('/api/search', {
-            method: 'POST',
-            body: JSON.stringify({ apiType, query })
-          });
-
-          if (data.success) {
-            // Update credits display
-            sidebarCredits.textContent = data.credits_left;
-            searchResultDiv.innerHTML = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
-          } else {
-            searchResultDiv.innerHTML = `<i class="fas fa-times-circle"></i> ${data.error}`;
-            if (data.error === 'Insufficient credits') {
-              setTimeout(() => {
-                // Switch to buy page
-                document.querySelector('.nav-item[data-page="buy"]').click();
-              }, 2000);
-            }
-          }
-        } catch (err) {
-          searchResultDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> Network error: ${err.message}`;
-        }
-      }
-
-      // ========== NAVIGATION ==========
-      function setupNavigation() {
-        const navItems = document.querySelectorAll('.nav-item[data-page]');
-        const pages = {
-          search: document.getElementById('page-search'),
-          buy: document.getElementById('page-buy'),
-          announcements: document.getElementById('page-announcements')
-        };
-
-        navItems.forEach(item => {
-          item.addEventListener('click', () => {
-            // Update active class
-            navItems.forEach(n => n.classList.remove('active'));
-            item.classList.add('active');
-
-            // Show selected page
-            const pageId = item.dataset.page;
-            Object.values(pages).forEach(p => p.style.display = 'none');
-            pages[pageId].style.display = 'block';
-
-            // Refresh data if needed
-            if (pageId === 'announcements') {
-              loadAnnouncements();
-            }
-          });
-        });
-
-        // Logout button
-        document.getElementById('logoutBtn').addEventListener('click', logout);
-      }
-
-      // ========== LOGIN ==========
-      async function handleLogin() {
-        const username = document.getElementById('loginUsername').value.trim();
-        const password = document.getElementById('loginPassword').value;
-
-        if (!username || !password) {
-          loginError.textContent = 'Both fields are required.';
-          return;
-        }
-
-        try {
-          const res = await fetch('/api/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
-          });
-          const data = await res.json();
-
-          if (res.ok) {
-            authToken = data.token;
-            localStorage.setItem('userToken', authToken);
-            showDashboard({
-              username: data.username,
-              credits: data.credits
-            });
-          } else {
-            loginError.textContent = data.error || 'Login failed';
-          }
-        } catch (err) {
-          loginError.textContent = 'Network error. Please try again.';
-        }
-      }
-
-      // ========== AUTO-LOGIN CHECK ==========
-      async function checkAutoLogin() {
-        if (!authToken) return;
-
-        try {
-          const res = await fetch('/api/me', {
-            headers: { 'Authorization': `Bearer ${authToken}` }
-          });
-          const data = await res.json();
-          if (res.ok && data.credits !== undefined) {
-            showDashboard({
-              username: data.username,
-              credits: data.credits
-            });
+    // Auto login
+    if (authToken) {
+      fetch('/api/me', { headers: { 'Authorization': `Bearer ${authToken}` } })
+        .then(res => res.json())
+        .then(data => {
+          if (data.credits !== undefined) {
+            loginDiv.style.display = 'none';
+            dashboard.style.display = 'block';
+            loadApiTypes();
+            creditsSpan.innerText = data.credits;
           } else {
             localStorage.removeItem('userToken');
-            authToken = null;
           }
-        } catch (err) {
-          localStorage.removeItem('userToken');
-          authToken = null;
-        }
+        }).catch(() => localStorage.removeItem('userToken'));
+    }
+
+    // Additional: close message panel if click outside (optional)
+    document.addEventListener('click', (e) => {
+      if (!msgFloat.contains(e.target) && !msgPanel.contains(e.target)) {
+        msgPanel.classList.remove('show');
       }
+    });
 
-      // ========== EVENT LISTENERS ==========
-      document.getElementById('loginBtn').addEventListener('click', handleLogin);
-      document.getElementById('loginPassword').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') handleLogin();
-      });
-      searchBtn.addEventListener('click', performSearch);
-      searchQueryInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') performSearch();
-      });
-
-      // Initialize navigation
-      setupNavigation();
-
-      // Check auto-login on page load
-      checkAutoLogin();
-    })();
-  </script>
+    // Expose updateCredits globally if needed
+    window.updateCredits = updateCredits;
+  })();
+</script>
+<!-- small extra style for icon alignment -->
 </body>
 </html>
