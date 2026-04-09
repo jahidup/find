@@ -3,367 +3,336 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const cors = require('cors');
 const axios = require('axios');
+const cors = require('cors');
 const path = require('path');
 
 const app = express();
 app.use(express.json());
-app.use(cors());
-app.use(express.static('public'));
+app.use(cors({ origin: '*', credentials: true }));
+app.use(express.static(path.join(__dirname, 'public')));
 
-// ========== CONFIGURATION ==========
-const ADMIN_CONFIG = {
-  USERNAME: process.env.ADMIN_USERNAME || "Shahid_Ansari",
-  PASSWORD: process.env.ADMIN_PASSWORD || "Tracker@3739",
-  PIN: process.env.ADMIN_PIN || "2744",
-  SECURITY_KEY: process.env.ADMIN_SECURITY_KEY || "NULL_PROTOCOL"
-};
-const JWT_SECRET = process.env.JWT_SECRET || 'null_protocol_super_secret_2025';
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/null_protocol';
-
-// ========== MONGOOSE CONNECTION ==========
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ MongoDB connected'))
-.catch(err => console.error('❌ MongoDB connection error:', err));
-
-// ========== MONGOOSE SCHEMAS ==========
+// ==================== MongoDB Models ====================
 const userSchema = new mongoose.Schema({
-  username: { type: String, unique: true, required: true },
-  password: { type: String, required: true },
-  credits: { type: Number, default: 10 },
+  userId: { type: String, unique: true, required: true },
+  username: String,
+  email: String,
+  passwordHash: String,
+  credits: { type: Number, default: 10 },      // remaining credits
+  subscription: { type: String, default: 'free' }, // free, starter, pro, unlimited
+  tags: [String],                               // custom tags for grouping
   isBlocked: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  blockReason: String,
+  adminMessage: String,                         // personal message from admin
+  createdAt: { type: Date, default: Date.now },
+  lastLogin: Date
 });
 
 const apiConfigSchema = new mongoose.Schema({
-  type: { type: String, unique: true, required: true },
-  url: { type: String, required: true },
-  description: String,
-  enabled: { type: Boolean, default: true },
-  createdAt: { type: Date, default: Date.now }
+  key: { type: String, unique: true },
+  url: String,
+  param: String,
+  desc: String,
+  extraBlacklist: [String]
 });
 
 const searchLogSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: String,
   apiType: String,
   query: String,
   timestamp: { type: Date, default: Date.now },
-  response: mongoose.Schema.Types.Mixed
+  responseTime: Number,
+  success: Boolean,
+  responseData: String
 });
 
-const messageSchema = new mongoose.Schema({
-  senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  senderUsername: String,
-  content: { type: String, required: true },
-  isAdmin: { type: Boolean, default: false },
-  timestamp: { type: Date, default: Date.now }
+const settingsSchema = new mongoose.Schema({
+  key: { type: String, unique: true },
+  value: mongoose.Schema.Types.Mixed
 });
 
 const User = mongoose.model('User', userSchema);
 const ApiConfig = mongoose.model('ApiConfig', apiConfigSchema);
 const SearchLog = mongoose.model('SearchLog', searchLogSchema);
-const Message = mongoose.model('Message', messageSchema);
+const Settings = mongoose.model('Settings', settingsSchema);
 
-// ========== INITIALIZE DEFAULT DATA ==========
-async function initDb() {
-  // Default APIs if none exist
-  const apiCount = await ApiConfig.countDocuments();
-  if (apiCount === 0) {
-    const defaultApis = [
-      { type: 'phone', url: 'https://ayaanmods.site/number.php?key=annonymous&number={query}', description: 'Phone lookup' },
-      { type: 'aadhaar', url: 'https://users-xinfo-admin.vercel.app/api?key=7demo&type=aadhar&term={query}', description: 'Aadhaar lookup' },
-      { type: 'vehicle', url: 'https://vehicle-info-aco-api.vercel.app/info?vehicle={query}', description: 'Vehicle RC' },
-      { type: 'pan', url: 'https://api.example.com/pan?query={query}', description: 'PAN Verification (demo)' }
-    ];
-    await ApiConfig.insertMany(defaultApis);
-    console.log('📡 Default APIs inserted');
+// ==================== Connect to MongoDB ====================
+mongoose.connect(process.env.MONGODB_URI)
+  .then(() => console.log('✅ MongoDB connected'))
+  .catch(err => console.error('MongoDB error:', err));
+
+// ==================== Seed default API configs ====================
+const DEFAULT_ENDPOINTS = {
+  phone: { url: 'https://ayaanmods.site/number.php?key=annonymous&number={}', param: 'number', desc: 'Mobile number lookup', extraBlacklist: ['channel_link', 'channel_name', 'API_Developer'] },
+  aadhaar: { url: 'https://users-xinfo-admin.vercel.app/api?key=7demo&type=aadhar&term={}', param: 'match', desc: 'Aadhaar lookup', extraBlacklist: ['tag'] },
+  ration: { url: 'https://number8899.vercel.app/?type=family&aadhar={}', param: 'id', desc: 'Ration card lookup', extraBlacklist: ['developer', 'credit'] },
+  vehicle: { url: 'https://vehicle-info-aco-api.vercel.app/info?vehicle={}', param: 'vehicle', desc: 'Vehicle RC lookup', extraBlacklist: [] },
+  vehicle_chalan: { url: 'https://api.b77bf911.workers.dev/vehicle?registration={}', param: 'registration', desc: 'Vehicle chalan lookup', extraBlacklist: [] },
+  vehicle_pro: { url: 'https://users-xinfo-admin.vercel.app/api?key=7demo&type=vehicle&term={}', param: 'rc', desc: 'Vehicle pro lookup', extraBlacklist: ['tag', 'owner'] },
+  ifsc: { url: 'https://ab-ifscinfoapi.vercel.app/info?ifsc={}', param: 'ifsc', desc: 'IFSC code lookup', extraBlacklist: [] },
+  email: { url: 'https://abbas-apis.vercel.app/api/email?mail={}', param: 'mail', desc: 'Email lookup', extraBlacklist: [] },
+  pincode: { url: 'https://api.postalpincode.in/pincode/{}', param: 'pincode', desc: 'Pincode lookup', extraBlacklist: [] },
+  gst: { url: 'https://api.b77bf911.workers.dev/gst?number={}', param: 'number', desc: 'GST number lookup', extraBlacklist: ['source'] },
+  tg_to_num: { url: 'https://rootx-tg-num-multi.satyamrajsingh562.workers.dev/3/{}?key=root', param: 'userid', desc: 'Telegram to number lookup', extraBlacklist: ['by'] },
+  ip_info: { url: 'https://abbas-apis.vercel.app/api/ip?ip={}', param: 'ip', desc: 'IP address lookup', extraBlacklist: [] },
+  ff_info: { url: 'https://abbas-apis.vercel.app/api/ff-info?uid={}', param: 'uid', desc: 'Free Fire info lookup', extraBlacklist: ['channel', 'Developer', 'channel'] },
+  ff_ban: { url: 'https://abbas-apis.vercel.app/api/ff-ban?uid={}', param: 'uid', desc: 'Free Fire ban check', extraBlacklist: [] },
+  tg_info_pro: { url: 'https://tg-to-num-six.vercel.app/?key=rootxsuryansh&q={}', param: 'user', desc: 'Telegram pro lookup', extraBlacklist: ['note', 'help_group', 'admin', 'owner', 'credit', 'response_time'] },
+  tg_info: { url: 'https://api.b77bf911.workers.dev/telegram?user={}', param: 'user', desc: 'Telegram info lookup', extraBlacklist: ['source'] },
+  insta_info: { url: 'https://mkhossain.alwaysdata.net/instanum.php?username={}', param: 'username', desc: 'Instagram info lookup', extraBlacklist: [] },
+  github_info: { url: 'https://abbas-apis.vercel.app/api/github?username={}', param: 'username', desc: 'GitHub info lookup', extraBlacklist: [] }
+};
+
+async function seedApiConfigs() {
+  for (const [key, cfg] of Object.entries(DEFAULT_ENDPOINTS)) {
+    const exists = await ApiConfig.findOne({ key });
+    if (!exists) {
+      await ApiConfig.create({ key, ...cfg });
+      console.log(`📝 Seeded API config: ${key}`);
+    }
   }
-  console.log('✅ Database initialized');
 }
-initDb().catch(console.error);
+seedApiConfigs();
 
-// ========== MIDDLEWARE ==========
-function verifyToken(req, res, next) {
+// ==================== Helper: Get/set global broadcast message ====================
+async function getBroadcastMessage() {
+  let setting = await Settings.findOne({ key: 'broadcast_message' });
+  if (!setting) {
+    setting = await Settings.create({ key: 'broadcast_message', value: '' });
+  }
+  return setting.value;
+}
+async function setBroadcastMessage(msg) {
+  await Settings.findOneAndUpdate(
+    { key: 'broadcast_message' },
+    { value: msg },
+    { upsert: true }
+  );
+}
+
+// ==================== Middleware ====================
+function authUser(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'No token' });
+  if (!authHeader) return res.status(401).json({ error: 'No token provided' });
   const token = authHeader.split(' ')[1];
   try {
-    req.user = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, process.env.USER_JWT_SECRET);
+    req.user = decoded;
     next();
-  } catch {
+  } catch (err) {
     res.status(401).json({ error: 'Invalid token' });
   }
 }
 
-function verifyAdmin(req, res, next) {
+function authAdmin(req, res, next) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ error: 'No token' });
+  if (!authHeader) return res.status(401).json({ error: 'No admin token' });
   const token = authHeader.split(' ')[1];
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    if (decoded.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+    const decoded = jwt.verify(token, process.env.ADMIN_JWT_SECRET);
+    if (decoded.role !== 'admin') throw new Error();
     req.admin = decoded;
     next();
-  } catch {
-    res.status(401).json({ error: 'Invalid token' });
+  } catch (err) {
+    res.status(401).json({ error: 'Invalid admin token' });
   }
 }
 
-// ========== AUTH ROUTES ==========
-app.post('/api/login', async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const user = await User.findOne({ username });
-    if (!user || !bcrypt.compareSync(password, user.password))
-      return res.status(401).json({ error: 'Invalid credentials' });
-    if (user.isBlocked) return res.status(403).json({ error: 'Account blocked' });
-
-    const token = jwt.sign(
-      { id: user._id, username: user.username, role: 'user' },
-      JWT_SECRET
-    );
-    res.json({ token, username: user.username, credits: user.credits, role: 'user' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ==================== User Routes ====================
+app.post('/user/login', async (req, res) => {
+  const { userId, password } = req.body;
+  if (!userId || !password) return res.status(400).json({ error: 'User ID and password required' });
+  const user = await User.findOne({ userId });
+  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+  const match = await bcrypt.compare(password, user.passwordHash);
+  if (!match) return res.status(401).json({ error: 'Invalid credentials' });
+  if (user.isBlocked) return res.status(403).json({ error: 'Account blocked', reason: user.blockReason });
+  user.lastLogin = new Date();
+  await user.save();
+  const token = jwt.sign({ userId: user.userId, role: 'user' }, process.env.USER_JWT_SECRET, { expiresIn: '7d' });
+  res.json({ token, user: { userId: user.userId, username: user.username, credits: user.credits, subscription: user.subscription, adminMessage: user.adminMessage } });
 });
 
-app.post('/api/admin/login', (req, res) => {
-  const { username, password, pin, securityKey } = req.body;
-  if (username === ADMIN_CONFIG.USERNAME &&
-      password === ADMIN_CONFIG.PASSWORD &&
-      pin === ADMIN_CONFIG.PIN &&
-      securityKey === ADMIN_CONFIG.SECURITY_KEY) {
-    const token = jwt.sign({ username: ADMIN_CONFIG.USERNAME, role: 'admin' }, JWT_SECRET);
-    res.json({ success: true, token, role: 'admin' });
-  } else {
-    res.status(401).json({ error: 'Invalid admin credentials' });
-  }
-});
-
-// ========== USER ROUTES ==========
-app.get('/api/me', verifyToken, async (req, res) => {
-  const user = await User.findById(req.user.id).select('credits isBlocked');
+app.get('/user/me', authUser, async (req, res) => {
+  const user = await User.findOne({ userId: req.user.userId }).select('-passwordHash');
   if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json({ credits: user.credits, isBlocked: user.isBlocked });
+  const broadcast = await getBroadcastMessage();
+  res.json({ ...user.toObject(), broadcastMessage: broadcast });
 });
 
-app.get('/api/api-types', verifyToken, async (req, res) => {
-  const apis = await ApiConfig.find({ enabled: true }).select('type description');
-  res.json(apis);
-});
+// Protected API endpoint
+app.get('/api', authUser, async (req, res) => {
+  const { type, query, extra, remove_branding } = req.query;
+  if (!type || !query) return res.status(400).json({ error: 'Missing type or query' });
 
-app.post('/api/search', verifyToken, async (req, res) => {
-  const { apiType, query } = req.body;
-  const userId = req.user.id;
+  const user = await User.findOne({ userId: req.user.userId });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (user.isBlocked) return res.status(403).json({ error: 'Blocked', reason: user.blockReason });
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
-  try {
-    const user = await User.findById(userId).session(session);
-    if (!user || user.isBlocked) throw new Error('Account blocked');
-    if (user.credits < 1) throw new Error('Insufficient credits');
-
-    const api = await ApiConfig.findOne({ type: apiType, enabled: true }).session(session);
-    if (!api) throw new Error('API not found');
-
-    let apiUrl = api.url.replace('{query}', encodeURIComponent(query));
-
-    // Deduct credit
-    user.credits -= 1;
-    await user.save({ session });
-
-    let result = {};
-    try {
-      const response = await axios.get(apiUrl, { timeout: 15000 });
-      result = response.data;
-    } catch (error) {
-      result = { error: 'API failed', message: error.message };
+  // Check credits (unless unlimited subscription)
+  if (user.subscription !== 'unlimited') {
+    if (user.credits <= 0) {
+      return res.status(429).json({ error: 'No credits left. Please purchase more credits.' });
     }
-    result.developer = 'Shahid Ansari';
-    result.powered_by = 'NULL PROTOCOL';
-
-    // Log search
-    await SearchLog.create([{
-      userId: user._id,
-      apiType,
-      query,
-      response: result
-    }], { session });
-
-    await session.commitTransaction();
-    res.json({ success: true, credits_left: user.credits, data: result });
-  } catch (err) {
-    await session.abortTransaction();
-    res.status(400).json({ error: err.message });
-  } finally {
-    session.endSession();
   }
-});
 
-// ========== MESSAGING ROUTES ==========
-// Get all messages (for users and admin)
-app.get('/api/messages', verifyToken, async (req, res) => {
+  const apiConfig = await ApiConfig.findOne({ key: type.toLowerCase() });
+  if (!apiConfig) return res.status(400).json({ error: 'Unknown API type' });
+
+  const startTime = Date.now();
+  let result, success = false;
   try {
-    const messages = await Message.find()
-      .sort({ timestamp: -1 })
-      .limit(100)
-      .lean();
-    res.json(messages.reverse()); // return oldest first
+    const url = apiConfig.url.replace('{}', encodeURIComponent(query));
+    const response = await axios.get(url, { timeout: 15000, headers: { 'User-Agent': 'Mozilla/5.0' } });
+    result = response.data;
+    success = true;
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    result = { error: 'External API failed', message: err.message };
   }
-});
+  const responseTime = Date.now() - startTime;
 
-// Send a message (user or admin)
-app.post('/api/messages', verifyToken, async (req, res) => {
-  const { content } = req.body;
-  if (!content || content.trim() === '') {
-    return res.status(400).json({ error: 'Message content required' });
-  }
-  try {
-    const user = await User.findById(req.user.id);
-    const isAdmin = req.user.role === 'admin';
-    const message = await Message.create({
-      senderId: user?._id || null,
-      senderUsername: isAdmin ? 'ADMIN' : user.username,
-      content: content.trim(),
-      isAdmin
-    });
-    res.json({ success: true, message });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Delete a message (admin only)
-app.delete('/api/messages/:id', verifyAdmin, async (req, res) => {
-  try {
-    await Message.findByIdAndDelete(req.params.id);
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ========== ADMIN ROUTES ==========
-app.get('/admin/stats', verifyAdmin, async (req, res) => {
-  const totalUsers = await User.countDocuments();
-  const totalCredits = await User.aggregate([{ $group: { _id: null, sum: { $sum: '$credits' } } }]);
-  const totalSearches = await SearchLog.countDocuments();
-  res.json({
-    totalUsers,
-    totalCredits: totalCredits[0]?.sum || 0,
-    totalSearches
+  // Log to MongoDB
+  await SearchLog.create({
+    userId: user.userId,
+    apiType: type,
+    query,
+    responseTime,
+    success,
+    responseData: JSON.stringify(result).substring(0, 5000)
   });
+
+  // Deduct 1 credit if not unlimited
+  if (user.subscription !== 'unlimited') {
+    user.credits -= 1;
+    await user.save();
+  }
+
+  // Clean response (blacklist + branding)
+  function cleanObject(obj, blacklist) {
+    if (!obj || typeof obj !== 'object') return obj;
+    const newObj = Array.isArray(obj) ? [] : {};
+    for (const [k, v] of Object.entries(obj)) {
+      if (!blacklist.includes(k.toLowerCase())) {
+        newObj[k] = (typeof v === 'object') ? cleanObject(v, blacklist) : v;
+      }
+    }
+    return newObj;
+  }
+  const blacklist = (apiConfig.extraBlacklist || []).map(s => s.toLowerCase());
+  if (remove_branding !== 'false') {
+    result = cleanObject(result, blacklist);
+  }
+  result.developer = 'Shahid Ansari';
+  result.powered_by = 'NULL PROTOCOL';
+  res.json(result);
 });
 
-app.get('/admin/users', verifyAdmin, async (req, res) => {
-  const search = req.query.search || '';
-  let filter = {};
-  if (search) {
-    filter.username = { $regex: search, $options: 'i' };
+// ==================== Admin Routes ====================
+app.post('/admin/login', (req, res) => {
+  const { username, password, pin, key } = req.body;
+  if (username === process.env.ADMIN_USERNAME &&
+      password === process.env.ADMIN_PASSWORD &&
+      pin === process.env.ADMIN_PIN &&
+      key === process.env.ADMIN_SECURITY_KEY) {
+    const token = jwt.sign({ role: 'admin' }, process.env.ADMIN_JWT_SECRET, { expiresIn: '1d' });
+    res.json({ success: true, token });
+  } else {
+    res.status(401).json({ success: false, error: 'Invalid admin credentials' });
   }
-  const users = await User.find(filter).select('-password').sort({ createdAt: -1 });
+});
+
+// Get all users (with optional filters)
+app.get('/admin/users', authAdmin, async (req, res) => {
+  const { tag, subscription } = req.query;
+  let filter = {};
+  if (tag) filter.tags = tag;
+  if (subscription) filter.subscription = subscription;
+  const users = await User.find(filter).select('-passwordHash');
   res.json(users);
 });
 
-app.post('/admin/user', verifyAdmin, async (req, res) => {
-  const { username, password, credits, isBlocked } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
-  try {
-    const hashed = bcrypt.hashSync(password, 10);
-    const user = await User.create({
-      username,
-      password: hashed,
-      credits: credits || 10,
-      isBlocked: isBlocked || false
-    });
-    res.json({ success: true, id: user._id });
-  } catch (err) {
-    res.status(400).json({ error: 'Username already exists' });
-  }
+// Create user
+app.post('/admin/users', authAdmin, async (req, res) => {
+  const { userId, username, email, password, credits, subscription, tags } = req.body;
+  if (!userId || !password) return res.status(400).json({ error: 'userId and password required' });
+  const exists = await User.findOne({ userId });
+  if (exists) return res.status(409).json({ error: 'User ID already exists' });
+  const passwordHash = await bcrypt.hash(password, 10);
+  const user = new User({ userId, username, email, passwordHash, credits: credits || 10, subscription: subscription || 'free', tags: tags || [] });
+  await user.save();
+  res.json({ success: true, user: { userId, username, email, credits: user.credits, subscription: user.subscription, tags: user.tags } });
 });
 
-app.put('/admin/user/:id', verifyAdmin, async (req, res) => {
-  const { credits, isBlocked } = req.body;
-  await User.findByIdAndUpdate(req.params.id, { credits, isBlocked });
+// Update user (credits, subscription, tags, block, personal message)
+app.put('/admin/users/:userId', authAdmin, async (req, res) => {
+  const { credits, subscription, tags, isBlocked, blockReason, adminMessage } = req.body;
+  const user = await User.findOne({ userId: req.params.userId });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  if (credits !== undefined) user.credits = credits;
+  if (subscription !== undefined) user.subscription = subscription;
+  if (tags !== undefined) user.tags = tags;
+  if (isBlocked !== undefined) user.isBlocked = isBlocked;
+  if (blockReason !== undefined) user.blockReason = blockReason;
+  if (adminMessage !== undefined) user.adminMessage = adminMessage;
+  await user.save();
   res.json({ success: true });
 });
 
-app.post('/admin/bulk-credits', verifyAdmin, async (req, res) => {
-  const { amount } = req.body;
-  await User.updateMany({}, { $inc: { credits: amount } });
+// Delete user
+app.delete('/admin/users/:userId', authAdmin, async (req, res) => {
+  await User.deleteOne({ userId: req.params.userId });
   res.json({ success: true });
 });
 
-app.delete('/admin/user/:id', verifyAdmin, async (req, res) => {
-  const result = await User.findByIdAndDelete(req.params.id);
-  if (!result) return res.status(404).json({ error: 'User not found' });
-  // Also delete related logs
-  await SearchLog.deleteMany({ userId: req.params.id });
-  res.json({ success: true });
+// Broadcast message to all users
+app.post('/admin/broadcast', authAdmin, async (req, res) => {
+  const { message } = req.body;
+  if (!message) return res.status(400).json({ error: 'Message required' });
+  await setBroadcastMessage(message);
+  res.json({ success: true, message: 'Broadcast sent to all users' });
 });
 
-app.get('/admin/logs', verifyAdmin, async (req, res) => {
-  const { userId } = req.query;
-  let filter = {};
-  if (userId) filter.userId = userId;
-  const logs = await SearchLog.find(filter)
-    .populate('userId', 'username')
-    .sort({ timestamp: -1 })
-    .limit(200)
-    .lean();
-  res.json(logs);
+// Get broadcast message (for admin preview)
+app.get('/admin/broadcast', authAdmin, async (req, res) => {
+  const msg = await getBroadcastMessage();
+  res.json({ broadcastMessage: msg });
 });
 
-// API Configs
-app.get('/admin/api-configs', verifyAdmin, async (req, res) => {
-  const configs = await ApiConfig.find().sort({ type: 1 });
+// API Configs management
+app.get('/admin/api-configs', authAdmin, async (req, res) => {
+  const configs = await ApiConfig.find();
   res.json(configs);
 });
 
-app.post('/admin/api-configs', verifyAdmin, async (req, res) => {
-  const { type, url, description, enabled } = req.body;
-  try {
-    await ApiConfig.create({ type, url, description, enabled });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(400).json({ error: 'API type already exists' });
-  }
+app.put('/admin/api-configs/:key', authAdmin, async (req, res) => {
+  const { url, param, desc, extraBlacklist } = req.body;
+  const config = await ApiConfig.findOneAndUpdate(
+    { key: req.params.key },
+    { url, param, desc, extraBlacklist: extraBlacklist || [] },
+    { new: true }
+  );
+  if (!config) return res.status(404).json({ error: 'Config not found' });
+  res.json(config);
 });
 
-app.put('/admin/api-configs/:id', verifyAdmin, async (req, res) => {
-  const { type, url, description, enabled } = req.body;
-  await ApiConfig.findByIdAndUpdate(req.params.id, { type, url, description, enabled });
-  res.json({ success: true });
+// Search logs
+app.get('/admin/logs', authAdmin, async (req, res) => {
+  const { userId, limit = 100 } = req.query;
+  const filter = userId ? { userId } : {};
+  const logs = await SearchLog.find(filter).sort({ timestamp: -1 }).limit(parseInt(limit));
+  res.json(logs);
 });
 
-app.delete('/admin/api-configs/:id', verifyAdmin, async (req, res) => {
-  await ApiConfig.findByIdAndDelete(req.params.id);
-  res.json({ success: true });
-});
-
-app.post('/admin/test-api', verifyAdmin, async (req, res) => {
-  const { url, query } = req.body;
-  const testUrl = url.replace('{query}', encodeURIComponent(query || 'test'));
-  try {
-    const response = await axios.get(testUrl, { timeout: 10000 });
-    res.json({ success: true, data: response.data });
-  } catch (error) {
-    res.json({ success: false, error: error.message });
-  }
-});
-
-// ========== SERVE FRONTEND ==========
-app.get('*', (req, res) => {
+// ==================== Serve Frontends ====================
+app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
 
+// ==================== Start Server ====================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
