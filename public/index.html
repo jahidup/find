@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <title>NULL PROTOCOL | Premium Intelligence</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      background: radial-gradient(circle at 10% 20%, #050814, #0a0f1f);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: #f0f3fa;
+      min-height: 100vh;
+      display: flex;
+      zoom: 0.85;
+    }
+    /* SIDEBAR */
+    .sidebar {
+      width: 260px;
+      background: rgba(10, 20, 35, 0.7);
+      backdrop-filter: blur(12px);
+      border-right: 1px solid rgba(0, 225, 255, 0.2);
+      padding: 2rem 1rem;
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      height: 100vh;
+      left: 0;
+      top: 0;
+      transition: all 0.3s;
+    }
+    .logo {
+      font-size: 1.8rem;
+      font-weight: 800;
+      background: linear-gradient(135deg, #00e1ff, #00ffc6);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin-bottom: 2rem;
+      text-align: center;
+    }
+    .nav-item {
+      padding: 1rem 1.2rem;
+      margin: 0.3rem 0;
+      border-radius: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 500;
+      transition: 0.2s;
+      color: #ccd6f6;
+    }
+    .nav-item.active {
+      background: rgba(0, 225, 255, 0.15);
+      border-left: 4px solid #00e1ff;
+      color: white;
+    }
+    .nav-item:hover { background: rgba(255,255,255,0.05); }
+    .credits-badge {
+      background: #00e1ff20;
+      padding: 0.6rem 1rem;
+      border-radius: 2rem;
+      margin: 1rem 0;
+      text-align: center;
+      border: 1px solid #00e1ff40;
+    }
+    .logout-btn {
+      margin-top: auto;
+      background: #fb718520;
+      color: #fb7185;
+      border: 1px solid #fb7185;
+    }
+    /* MAIN CONTENT */
+    .main-content {
+      margin-left: 260px;
+      flex: 1;
+      padding: 2rem;
+      width: calc(100% - 260px);
+    }
+    .card {
+      background: rgba(15, 25, 45, 0.7);
+      backdrop-filter: blur(12px);
+      border-radius: 2rem;
+      border: 1px solid rgba(0, 225, 255, 0.25);
+      padding: 2rem;
+      box-shadow: 0 20px 35px -10px rgba(0,0,0,0.5);
+      margin-bottom: 2rem;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 0.9rem 1.2rem;
+      margin: 0.6rem 0;
+      background: rgba(2,6,23,0.8);
+      border: 1px solid #2d3a5e;
+      border-radius: 1.5rem;
+      color: white;
+      font-size: 1rem;
+    }
+    button {
+      background: linear-gradient(95deg, #00e1ff, #00ffc6);
+      color: #020617;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      width: auto;
+      padding: 0.7rem 1.8rem;
+    }
+    .result-box {
+      background: #010314;
+      border-radius: 1.5rem;
+      padding: 1.2rem;
+      font-family: monospace;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      border: 1px solid #2d3a5e;
+      max-height: 400px;
+    }
+    .message-container {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: 1rem;
+      padding-right: 0.5rem;
+    }
+    .message-bubble {
+      background: #1e293b;
+      border-radius: 1rem;
+      padding: 0.8rem 1.2rem;
+      margin: 0.8rem 0;
+      border-left: 4px solid #00e1ff;
+    }
+    .message-admin {
+      border-left-color: #a855f7;
+      background: #2e1a47;
+    }
+    .msg-meta {
+      font-size: 0.8rem;
+      color: #94a3b8;
+      margin-bottom: 0.3rem;
+    }
+    .flex-row {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      body { zoom: 0.7; }
+      .sidebar { width: 80px; padding: 1rem 0.5rem; }
+      .sidebar .logo, .sidebar .nav-item span:not(.icon) { display: none; }
+      .main-content { margin-left: 80px; width: calc(100% - 80px); }
+    }
+  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+<body>
+<!-- LOGIN CARD (hidden after login) -->
+<div id="loginOverlay" style="position:fixed; top:0; left:0; width:100%; height:100%; background: #050814; z-index:999; display:flex; align-items:center; justify-content:center;">
+  <div class="card" style="max-width:450px; width:90%;">
+    <div class="logo" style="text-align:center;">⚡ NULL PROTOCOL</div>
+    <h2 style="text-align:center; margin-bottom:1.5rem;">Sign in</h2>
+    <input type="text" id="loginUsername" placeholder="Username">
+    <input type="password" id="loginPassword" placeholder="Password">
+    <button id="doLoginBtn" style="width:100%;">Access →</button>
+    <div id="loginError" style="color:#fb7185; margin-top:1rem; text-align:center;"></div>
+    <div style="text-align:center; margin-top:1.5rem;">
+      <a href="/admin.html" style="color:#00e1ff;">🔐 Admin Panel</a>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR + MAIN (hidden initially) -->
+<div id="appContainer" style="display:none; width:100%;">
+  <div class="sidebar">
+    <div class="logo">⚡ NULL</div>
+    <div class="credits-badge">💰 <span id="sidebarCredits">0</span> credits</div>
+    <div class="nav-item active" data-page="search"><i class="fas fa-search"></i><span> Search</span></div>
+    <div class="nav-item" data-page="messages"><i class="fas fa-comments"></i><span> Messages</span></div>
+    <div class="nav-item" data-page="account"><i class="fas fa-user-circle"></i><span> Account</span></div>
+    <div class="nav-item logout-btn" id="logoutSidebarBtn"><i class="fas fa-sign-out-alt"></i><span> Logout</span></div>
+  </div>
+  <div class="main-content">
+    <!-- SEARCH PAGE -->
+    <div id="page-search" class="page active">
+      <div class="card">
+        <h2>🔍 Deep Search</h2>
+        <select id="apiSelect"><option>Loading APIs...</option></select>
+        <input type="text" id="searchQuery" placeholder="Enter phone, Aadhaar, vehicle...">
+        <button id="searchNowBtn">🔎 Execute (1 credit)</button>
+        <div id="searchResult" class="result-box" style="margin-top:1.5rem;">✨ Ready for search</div>
+      </div>
+    </div>
+    <!-- MESSAGES PAGE -->
+    <div id="page-messages" class="page" style="display:none;">
+      <div class="card">
+        <h2><i class="fas fa-comment-dots"></i> Live Messages</h2>
+        <div id="messageList" class="message-container">Loading messages...</div>
+        <div class="flex-row">
+          <input type="text" id="messageInput" placeholder="Type your message...">
+          <button id="sendMessageBtn"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
+        <p style="font-size:0.8rem; margin-top:0.5rem; opacity:0.7;">Messages refresh automatically every 5s</p>
+      </div>
+    </div>
+    <!-- ACCOUNT PAGE -->
+    <div id="page-account" class="page" style="display:none;">
+      <div class="card">
+        <h2>👤 Account Details</h2>
+        <p><strong>Username:</strong> <span id="accountUsername"></span></p>
+        <p><strong>Credits:</strong> <span id="accountCredits"></span></p>
+        <p><strong>Account Status:</strong> <span id="accountStatus"></span></p>
+        <p><strong>Joined:</strong> <span id="accountJoined"></span></p>
+        <hr style="border-color:#2d3a5e; margin:1.5rem 0;">
+        <h3>Change Password</h3>
+        <input type="password" id="newPassword" placeholder="New password">
+        <button id="changePasswordBtn">Update Password</button>
+        <div id="accountMsg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---------- GLOBAL VARS ----------
+  let authToken = localStorage.getItem('userToken');
+  let currentUser = null;
+  let messageRefreshInterval = null;
+
+  const loginOverlay = document.getElementById('loginOverlay');
+  const appContainer = document.getElementById('appContainer');
+  const pages = { search: document.getElementById('page-search'), messages: document.getElementById('page-messages'), account: document.getElementById('page-account') };
+
+  // ---------- HELPER FUNCTIONS ----------
+  async function apiCall(endpoint, options = {}) {
+    const res = await fetch(endpoint, {
+      ...options,
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}`, ...options.headers }
+    });
+    if (res.status === 401) { logout(); throw new Error('Unauthorized'); }
+    return res.json();
+  }
+
+  function logout() {
+    localStorage.removeItem('userToken');
+    clearInterval(messageRefreshInterval);
+    window.location.reload();
+  }
+
+  function updateCreditsDisplay(credits) {
+    document.getElementById('sidebarCredits').innerText = credits;
+    document.getElementById('accountCredits').innerText = credits;
+  }
+
+  async function loadUserInfo() {
+    try {
+      const data = await apiCall('/api/me');
+      updateCreditsDisplay(data.credits);
+      document.getElementById('accountStatus').innerText = data.isBlocked ? '❌ Blocked' : '✅ Active';
+    } catch(e) { console.error(e); }
+  }
+
+  async function loadApiTypes() {
+    const data = await apiCall('/api/api-types');
+    const select = document.getElementById('apiSelect');
+    select.innerHTML = '';
+    data.forEach(api => {
+      const opt = document.createElement('option');
+      opt.value = api.type;
+      opt.textContent = api.type.toUpperCase() + ' — ' + (api.description || '');
+      select.appendChild(opt);
+    });
+  }
+
+  // ---------- MESSAGES ----------
+  async function loadMessages() {
+    try {
+      const messages = await apiCall('/api/messages');
+      const container = document.getElementById('messageList');
+      if (messages.length === 0) {
+        container.innerHTML = '<p style="opacity:0.7;">No messages yet. Start the conversation!</p>';
+        return;
+      }
+      container.innerHTML = messages.map(msg => `
+        <div class="message-bubble ${msg.isAdmin ? 'message-admin' : ''}">
+          <div class="msg-meta"><strong>${msg.senderUsername}</strong> • ${new Date(msg.timestamp).toLocaleString()}</div>
+          <div>${escapeHtml(msg.content)}</div>
+        </div>
+      `).join('');
+      container.scrollTop = container.scrollHeight;
+    } catch(e) { console.error(e); }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const content = input.value.trim();
+    if (!content) return;
+    try {
+      await apiCall('/api/messages', { method: 'POST', body: JSON.stringify({ content }) });
+      input.value = '';
+      await loadMessages();
+    } catch(e) { alert('Failed to send message'); }
+  }
+
+  // ---------- PAGE NAVIGATION ----------
+  function showPage(pageId) {
+    Object.values(pages).forEach(p => p.style.display = 'none');
+    pages[pageId].style.display = 'block';
+    document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+    document.querySelector(`.nav-item[data-page="${pageId}"]`).classList.add('active');
+
+    if (pageId === 'messages') {
+      loadMessages();
+      if (!messageRefreshInterval) {
+        messageRefreshInterval = setInterval(loadMessages, 5000);
+      }
+    } else {
+      if (messageRefreshInterval) {
+        clearInterval(messageRefreshInterval);
+        messageRefreshInterval = null;
+      }
+    }
+    if (pageId === 'account') {
+      loadAccountDetails();
+    }
+  }
+
+  async function loadAccountDetails() {
+    try {
+      const userRes = await apiCall('/api/me');
+      document.getElementById('accountUsername').innerText = currentUser?.username || '—';
+      document.getElementById('accountCredits').innerText = userRes.credits;
+      document.getElementById('accountStatus').innerText = userRes.isBlocked ? 'Blocked' : 'Active';
+      // Joined date not stored separately, could add later
+    } catch(e) {}
+  }
+
+  // ---------- LOGIN ----------
+  document.getElementById('doLoginBtn').onclick = async () => {
+    const username = document.getElementById('loginUsername').value.trim();
+    const password = document.getElementById('loginPassword').value;
+    if (!username || !password) return document.getElementById('loginError').innerText = 'Both fields required';
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      authToken = data.token;
+      currentUser = { username: data.username };
+      localStorage.setItem('userToken', authToken);
+      loginOverlay.style.display = 'none';
+      appContainer.style.display = 'flex';
+      await loadApiTypes();
+      await loadUserInfo();
+      showPage('search');
+    } else {
+      document.getElementById('loginError').innerText = data.error;
+    }
+  };
+
+  // ---------- SEARCH ----------
+  document.getElementById('searchNowBtn').onclick = async () => {
+    const apiType = document.getElementById('apiSelect').value;
+    const query = document.getElementById('searchQuery').value.trim();
+    if (!query) return alert('Enter search value');
+    const resultDiv = document.getElementById('searchResult');
+    resultDiv.innerHTML = '⏳ Processing...';
+    try {
+      const data = await apiCall('/api/search', {
+        method: 'POST',
+        body: JSON.stringify({ apiType, query })
+      });
+      if (data.success) {
+        updateCreditsDisplay(data.credits_left);
+        resultDiv.innerHTML = `<pre>${JSON.stringify(data.data, null, 2)}</pre>`;
+      } else {
+        resultDiv.innerHTML = `❌ ${data.error}`;
+      }
+    } catch (err) {
+      resultDiv.innerHTML = `⚠️ Error: ${err.message}`;
+    }
+  };
+
+  // ---------- EVENT LISTENERS ----------
+  document.querySelectorAll('.nav-item[data-page]').forEach(el => {
+    el.addEventListener('click', () => showPage(el.dataset.page));
+  });
+  document.getElementById('logoutSidebarBtn').onclick = logout;
+  document.getElementById('sendMessageBtn').onclick = sendMessage;
+  document.getElementById('messageInput').addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') sendMessage();
+  });
+
+  document.getElementById('changePasswordBtn').onclick = async () => {
+    const newPass = document.getElementById('newPassword').value;
+    if (!newPass) return alert('Enter new password');
+    // Password change endpoint not implemented in backend, can be added if needed.
+    alert('Password change feature can be added similarly.');
+  };
+
+  // ---------- AUTO LOGIN CHECK ----------
+  if (authToken) {
+    fetch('/api/me', { headers: { 'Authorization': `Bearer ${authToken}` } })
+      .then(res => res.json())
+      .then(data => {
+        if (data.credits !== undefined) {
+          loginOverlay.style.display = 'none';
+          appContainer.style.display = 'flex';
+          loadApiTypes();
+          updateCreditsDisplay(data.credits);
+          showPage('search');
+        } else {
+          localStorage.removeItem('userToken');
+        }
+      }).catch(() => localStorage.removeItem('userToken'));
+  }
+</script>
+</body>
+</html>
